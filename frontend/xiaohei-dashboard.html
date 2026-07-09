@@ -1,0 +1,745 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>小黑日报</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@600;700&family=Noto+Sans+SC:wght@400;500;700&family=JetBrains+Mono:wght@400;500;700&display=swap');
+
+:root{
+  --bg:#16140f;
+  --surface:#1e1b15;
+  --surface-2:#252019;
+  --border:#37322a;
+  --text:#f0ebe0;
+  --text-muted:#948c7c;
+  --text-faint:#5c5648;
+  --accent:#d9a441;
+  --rec:#e0483c;
+
+  --c-dev:#6fa8d8;
+  --c-meeting:#d98e52;
+  --c-comm:#7fb88b;
+  --c-doc:#c6b15e;
+  --c-test:#b87bb0;
+  --c-design:#e0847a;
+  --c-ops:#6fbcb0;
+  --c-data:#8e8ed8;
+  --c-study:#d8c08e;
+  --c-mgmt:#a3a3a3;
+  --c-product:#e0b45c;
+  --c-life:#7fc4d8;
+  --c-other:#5c5648;
+}
+
+*{box-sizing:border-box;margin:0;padding:0;}
+body{
+  background:
+    radial-gradient(ellipse 900px 500px at 15% -10%, rgba(217,164,65,0.06), transparent),
+    var(--bg);
+  color:var(--text);
+  font-family:'Noto Sans SC', -apple-system, sans-serif;
+  min-height:100vh;
+  padding:32px 20px 80px;
+}
+.wrap{max-width:1100px;margin:0 auto;position:relative;}
+
+header{
+  display:flex;
+  align-items:flex-end;
+  justify-content:space-between;
+  flex-wrap:wrap;
+  gap:16px;
+  border-bottom:2px solid var(--border);
+  padding-bottom:18px;
+  margin-bottom:28px;
+}
+.masthead h1{
+  font-family:'Noto Serif SC',serif;
+  font-weight:700;
+  font-size:32px;
+  letter-spacing:1px;
+  display:flex;
+  align-items:center;
+  gap:10px;
+}
+.rec-dot{
+  width:9px;height:9px;border-radius:50%;
+  background:var(--rec);
+  box-shadow:0 0 8px 1px rgba(224,72,60,0.7);
+  animation:pulse 2s ease-in-out infinite;
+  flex-shrink:0;
+}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:.35;}}
+.masthead .sub{
+  font-family:'JetBrains Mono',monospace;
+  font-size:11.5px;
+  color:var(--text-faint);
+  letter-spacing:.5px;
+  margin-top:4px;
+}
+.controls{
+  display:flex;gap:10px;align-items:center;flex-wrap:wrap;
+}
+.controls label{font-size:11px;color:var(--text-muted);font-family:'JetBrains Mono',monospace;display:block;margin-bottom:3px;}
+input[type=date]{
+  background:var(--surface);
+  border:1px solid var(--border);
+  color:var(--text);
+  padding:7px 10px;
+  border-radius:4px;
+  font-family:'JetBrains Mono',monospace;
+  font-size:12.5px;
+  color-scheme:dark;
+}
+input[type=text]{
+  background:var(--surface);
+  border:1px solid var(--border);
+  color:var(--text);
+  padding:7px 10px;
+  border-radius:4px;
+  font-family:'JetBrains Mono',monospace;
+  font-size:12.5px;
+}
+button.go{
+  background:var(--accent);
+  color:#1a1608;
+  border:none;
+  padding:9px 18px;
+  border-radius:4px;
+  font-weight:700;
+  font-size:13px;
+  cursor:pointer;
+  align-self:flex-end;
+  transition:filter .15s;
+}
+button.go:hover{filter:brightness(1.1);}
+button.go:focus-visible, input:focus-visible, .frame:focus-visible{outline:2px solid var(--accent);outline-offset:2px;}
+
+.banner{
+  font-family:'JetBrains Mono',monospace;
+  font-size:12px;
+  color:var(--accent);
+  background:rgba(217,164,65,0.08);
+  border:1px solid rgba(217,164,65,0.25);
+  padding:8px 14px;
+  border-radius:4px;
+  margin-bottom:22px;
+  display:none;
+}
+.banner.show{display:block;}
+
+.section-label{
+  font-family:'JetBrains Mono',monospace;
+  font-size:11px;
+  letter-spacing:2px;
+  text-transform:uppercase;
+  color:var(--text-faint);
+  margin:36px 0 12px;
+  display:flex;align-items:center;gap:10px;
+}
+.section-label::after{content:'';flex:1;height:1px;background:var(--border);}
+
+.readouts{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;}
+.readout{
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:6px;
+  padding:18px 20px;
+  position:relative;
+  overflow:hidden;
+}
+.readout::before{
+  content:'';position:absolute;top:0;left:0;width:3px;height:100%;
+  background:var(--accent);
+}
+.readout .num{
+  font-family:'JetBrains Mono',monospace;
+  font-size:30px;font-weight:700;
+  line-height:1.1;
+}
+.readout .label{
+  font-size:12px;color:var(--text-muted);margin-top:6px;
+}
+
+.cat-bar{
+  display:flex;height:14px;border-radius:7px;overflow:hidden;
+  border:1px solid var(--border);
+  margin-bottom:16px;
+  background:var(--surface-2);
+}
+.cat-bar span{height:100%;}
+.cat-legend{
+  display:flex;flex-wrap:wrap;gap:10px 20px;
+}
+.cat-legend .item{
+  display:flex;align-items:center;gap:7px;
+  font-size:12.5px;color:var(--text-muted);
+}
+.cat-legend .swatch{width:9px;height:9px;border-radius:2px;flex-shrink:0;}
+.cat-legend .hrs{font-family:'JetBrains Mono',monospace;color:var(--text);margin-left:2px;}
+
+.heatmap{
+  display:grid;
+  grid-template-columns:repeat(24,1fr);
+  gap:3px;
+}
+.heatmap .cell{
+  aspect-ratio:1;
+  border-radius:2px;
+  background:var(--surface-2);
+  position:relative;
+}
+.heatmap .cell[data-h]:hover::after{
+  content:attr(data-h);
+  position:absolute;bottom:130%;left:50%;transform:translateX(-50%);
+  background:#0d0c09;border:1px solid var(--border);
+  padding:3px 6px;border-radius:3px;font-size:10px;white-space:nowrap;
+  font-family:'JetBrains Mono',monospace;color:var(--text);z-index:2;
+}
+.heat-axis{
+  display:grid;grid-template-columns:repeat(24,1fr);
+  font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--text-faint);
+  margin-top:5px;
+}
+.heat-axis span{text-align:center;}
+.heat-day-label{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text-muted);margin-bottom:4px;}
+
+.cols{display:grid;grid-template-columns:290px 1fr;gap:28px;align-items:start;}
+@media (max-width:820px){.cols{grid-template-columns:1fr;} .readouts{grid-template-columns:1fr;}}
+
+.app-list{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:16px;}
+.app-row{margin-bottom:12px;}
+.app-row:last-child{margin-bottom:0;}
+.app-row .top{display:flex;justify-content:space-between;font-size:12.5px;margin-bottom:5px;}
+.app-row .name{color:var(--text);}
+.app-row .dur{font-family:'JetBrains Mono',monospace;color:var(--text-muted);}
+.app-row .track{height:5px;background:var(--surface-2);border-radius:3px;overflow:hidden;}
+.app-row .fill{height:100%;background:var(--accent);border-radius:3px;}
+
+.filmstrip{
+  border-left:2px dashed var(--border);
+  padding-left:0;
+  position:relative;
+}
+.frame{
+  display:grid;
+  grid-template-columns:70px 1fr;
+  gap:14px;
+  position:relative;
+  padding:0 0 22px 22px;
+}
+.frame::before{
+  content:'';
+  position:absolute;left:-6px;top:3px;
+  width:10px;height:10px;border-radius:50%;
+  background:var(--cat-color, var(--accent));
+  border:2px solid var(--bg);
+}
+.frame .time{
+  font-family:'JetBrains Mono',monospace;
+  font-size:11.5px;color:var(--text-faint);
+  padding-top:2px;
+}
+.frame .card{
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-left:3px solid var(--cat-color, var(--accent));
+  border-radius:5px;
+  padding:11px 14px;
+}
+.frame .card .meta{
+  display:flex;gap:8px;align-items:center;margin-bottom:5px;flex-wrap:wrap;
+}
+.frame .tag{
+  font-size:10.5px;font-weight:700;
+  color:var(--cat-color, var(--accent));
+  background:color-mix(in srgb, var(--cat-color, var(--accent)) 16%, transparent);
+  padding:2px 7px;border-radius:3px;
+  letter-spacing:.5px;
+}
+.frame .app{font-size:12px;color:var(--text-muted);font-family:'JetBrains Mono',monospace;}
+.frame .desc{font-size:13px;color:var(--text);line-height:1.5;}
+.frame .desc.empty-desc{color:var(--text-faint);font-style:italic;}
+
+.timeline-controls{display:flex;justify-content:flex-end;margin-bottom:10px;}
+.timeline-controls button{
+  background:none;border:1px solid var(--border);color:var(--text-muted);
+  padding:5px 11px;border-radius:4px;font-size:11.5px;cursor:pointer;font-family:'JetBrains Mono',monospace;
+}
+.timeline-controls button:hover{color:var(--text);border-color:var(--accent);}
+
+.reports{display:flex;flex-direction:column;gap:8px;}
+.report-item{
+  display:flex;justify-content:space-between;align-items:center;
+  background:var(--surface);border:1px solid var(--border);border-radius:5px;
+  padding:11px 15px;font-size:13px;
+}
+.report-item a{color:var(--accent);text-decoration:none;font-family:'JetBrains Mono',monospace;font-size:12px;}
+.report-item a:hover{text-decoration:underline;}
+
+.empty{
+  color:var(--text-faint);font-size:13px;padding:24px;text-align:center;
+  border:1px dashed var(--border);border-radius:6px;
+}
+footer{
+  margin-top:50px;text-align:center;font-size:11px;color:var(--text-faint);
+  font-family:'JetBrains Mono',monospace;
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="masthead">
+      <h1><span class="rec-dot"></span>小黑日报</h1>
+      <div class="sub">WORK ACTIVITY RECORDER · 自动截屏 · AI 归档 · 每帧都算数</div>
+    </div>
+    <div class="controls">
+      <div>
+        <label>开始</label>
+        <input type="date" id="startDate">
+      </div>
+      <div>
+        <label>结束</label>
+        <input type="date" id="endDate">
+      </div>
+      <div>
+        <label>服务地址</label>
+        <input type="text" id="apiBase" style="width:180px;" value="http://127.0.0.1:8089">
+      </div>
+      <button class="go" id="loadBtn">查看</button>
+      <div>
+        <label>自动刷新</label>
+        <div style="display:flex;gap:6px;align-items:center;">
+          <input type="checkbox" id="autoRefreshToggle" checked style="width:15px;height:15px;accent-color:var(--accent);">
+          <select id="autoRefreshInterval" style="background:var(--surface);border:1px solid var(--border);color:var(--text);padding:6px 8px;border-radius:4px;font-family:'JetBrains Mono',monospace;font-size:12.5px;">
+            <option value="15">15s</option>
+            <option value="30" selected>30s</option>
+            <option value="60">1min</option>
+            <option value="300">5min</option>
+          </select>
+        </div>
+      </div>
+      <span id="lastUpdated" style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text-faint);align-self:flex-end;padding-bottom:8px;"></span>
+    </div>
+  </header>
+
+  <div class="banner" id="banner">
+    <div id="bannerTitle">⚠ 无法连接本地服务，部分模块未显示数据</div>
+    <div id="bannerDetail" style="margin-top:4px;color:var(--text-muted);font-size:11px;"></div>
+    <button id="retryBtn" style="margin-top:8px;background:none;border:1px solid var(--border);color:var(--accent);padding:4px 12px;border-radius:4px;font-size:11.5px;cursor:pointer;font-family:'JetBrains Mono',monospace;">重试连接</button>
+  </div>
+
+  <div class="section-label">概要</div>
+  <div class="readouts" id="readouts"></div>
+
+  <div class="section-label">分类时长分布</div>
+  <div id="catBarWrap">
+    <div class="cat-bar" id="catBar"></div>
+    <div class="cat-legend" id="catLegend"></div>
+  </div>
+
+  <div class="section-label">时段热力图</div>
+  <div id="heatmapDayLabel" class="heat-day-label"></div>
+  <div class="heatmap" id="heatmap"></div>
+  <div class="heat-axis" id="heatAxis"></div>
+
+  <div class="section-label">应用 · 时间线</div>
+  <div class="cols">
+    <div>
+      <div class="app-list" id="appList"></div>
+    </div>
+    <div>
+      <div class="timeline-controls"><button id="tlOldestFirst">按时间正序 ↑</button></div>
+      <div class="filmstrip" id="timeline"></div>
+    </div>
+  </div>
+
+  <div class="section-label">日报存档</div>
+  <div class="reports" id="reports"></div>
+
+  <footer>小黑日报助手 · 数据仅保存在本机 · 每一帧，都是你认真工作的证据</footer>
+</div>
+
+<script>
+function getApiBase(){
+  const v = document.getElementById('apiBase').value.trim().replace(/\/$/, '');
+  return v || 'http://127.0.0.1:8089';
+}
+const CAT_COLORS = {
+  '开发':'var(--c-dev)', '会议':'var(--c-meeting)', '沟通':'var(--c-comm)',
+  '文档':'var(--c-doc)', '测试':'var(--c-test)', '设计':'var(--c-design)',
+  '运维':'var(--c-ops)', '数据分析':'var(--c-data)', '学习':'var(--c-study)',
+  '管理':'var(--c-mgmt)', '产品':'var(--c-product)', '生活':'var(--c-life)',
+  '其他':'var(--c-other)'
+};
+
+function todayStr(offsetDays=0){
+  const d = new Date();
+  d.setDate(d.getDate()+offsetDays);
+  return d.toISOString().slice(0,10);
+}
+
+function fmtTime(iso){
+  if(!iso) return '--:--';
+  const d = new Date(iso);
+  if(isNaN(d.getTime())) return '--:--';
+  return d.toLocaleTimeString('zh-CN', {hour:'2-digit', minute:'2-digit', hour12:false});
+}
+
+function parseDetails(detailsJsonStr){
+  try{
+    const obj = JSON.parse(detailsJsonStr || '{}');
+    return obj || {};
+  } catch(e){ return {}; }
+}
+
+function appLabel(details){
+  const app = details.frontmostApp;
+  const title = details.windowTitle;
+  if(app && app !== 'Unknown' && title) return `${app} — ${title}`;
+  if(app && app !== 'Unknown') return app;
+  if(title) return title;
+  return '未知应用';
+}
+
+function catColor(name){ return CAT_COLORS[name] || 'var(--accent)'; }
+
+function renderReadouts(s){
+  const el = document.getElementById('readouts');
+  if(!s){
+    el.innerHTML = `<div class="empty" style="grid-column:1/-1;">概要加载失败，未显示任何数据</div>`;
+    return;
+  }
+  el.innerHTML = `
+    <div class="readout"><div class="num">${s.count}</div><div class="label">记录条数</div></div>
+    <div class="readout"><div class="num">${s.focusHours}h</div><div class="label">专注时长</div></div>
+    <div class="readout"><div class="num" style="font-size:22px;">${s.activePeriod}</div><div class="label">活跃时段</div></div>
+  `;
+}
+
+function renderCategories(cats){
+  const bar = document.getElementById('catBar');
+  const legend = document.getElementById('catLegend');
+  if(cats === null){
+    bar.innerHTML = '';
+    legend.innerHTML = '<div class="empty" style="border:none;padding:6px 0;">分类数据加载失败</div>';
+    return;
+  }
+  if(!cats.length){
+    bar.innerHTML = '';
+    legend.innerHTML = '<div class="empty" style="border:none;padding:6px 0;">该时间范围内暂无分类数据</div>';
+    return;
+  }
+  const total = cats.reduce((a,c)=>a+c[1],0) || 1;
+  bar.innerHTML = cats.map(([name,hrs]) =>
+    `<span style="width:${(hrs/total*100).toFixed(2)}%; background:${catColor(name)};" title="${name} ${hrs}h"></span>`
+  ).join('');
+  legend.innerHTML = cats.map(([name,hrs]) => `
+    <div class="item">
+      <span class="swatch" style="background:${catColor(name)};"></span>
+      ${name} <span class="hrs">${hrs}h</span>
+    </div>
+  `).join('');
+}
+
+function renderHeatmap(heat, dateLabel){
+  const grid = document.getElementById('heatmap');
+  const axis = document.getElementById('heatAxis');
+  document.getElementById('heatmapDayLabel').textContent = dateLabel || '';
+  if(!heat){
+    grid.innerHTML = `<div class="empty" style="grid-column:1/-1;">时段数据加载失败</div>`;
+    axis.innerHTML = '';
+    return;
+  }
+  const max = Math.max(...heat, 1);
+  grid.innerHTML = heat.map((v,h) => {
+    const alpha = v===0 ? 0 : 0.15 + (v/max)*0.85;
+    return `<div class="cell" data-h="${String(h).padStart(2,'0')}:00 · ${v} 条" style="background:${v===0?'var(--surface-2)':`rgba(217,164,65,${alpha.toFixed(2)})`};"></div>`;
+  }).join('');
+  axis.innerHTML = heat.map((_,h) => `<span>${h%3===0? h : ''}</span>`).join('');
+}
+
+function renderApps(apps){
+  const el = document.getElementById('appList');
+  if(apps === null){ el.innerHTML = '<div class="empty">应用数据加载失败</div>'; return; }
+  if(!apps.length){ el.innerHTML = '<div class="empty">暂无应用使用数据</div>'; return; }
+  const max = Math.max(...apps.map(a=>a.minutes), 1);
+  el.innerHTML = apps.map(a => `
+    <div class="app-row">
+      <div class="top"><span class="name">${a.name}</span><span class="dur">${Math.floor(a.minutes/60)}h${Math.round(a.minutes%60)}m</span></div>
+      <div class="track"><div class="fill" style="width:${(a.minutes/max*100).toFixed(1)}%;"></div></div>
+    </div>
+  `).join('');
+}
+
+let tlOldestFirst = false;
+let currentTimeline = [];
+
+function renderTimeline(items){
+  currentTimeline = items || [];
+  const el = document.getElementById('timeline');
+  if(items === null){ el.innerHTML = '<div class="empty">时间线加载失败</div>'; return; }
+  if(!items.length){ el.innerHTML = '<div class="empty">暂无活动记录</div>'; return; }
+  const ordered = tlOldestFirst ? items : [...items].reverse();
+  el.innerHTML = ordered.map(it => `
+    <div class="frame" style="--cat-color:${catColor(it.category)};" tabindex="0">
+      <div class="time">${it.time}</div>
+      <div class="card">
+        <div class="meta">
+          <span class="tag">${it.category}</span>
+          <span class="app">${it.app}</span>
+        </div>
+        <div class="desc ${it.desc ? '' : 'empty-desc'}">${it.desc || '（该帧未识别到明显工作内容）'}</div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function renderReports(reports){
+  const el = document.getElementById('reports');
+  if(reports === null){ el.innerHTML = '<div class="empty">日报存档加载失败</div>'; return; }
+  if(!reports.length){ el.innerHTML = '<div class="empty">暂无归档日报</div>'; return; }
+  el.innerHTML = reports.map(r => `
+    <div class="report-item">
+      <span>${r.date} 工作日报</span>
+      <a href="${r.url}" target="_blank" rel="noopener">查看 Markdown →</a>
+    </div>
+  `).join('');
+}
+
+function renderAll(d){
+  renderReadouts(d.summary);
+  renderCategories(d.categories);
+  renderHeatmap(d.heat, d.heatDate);
+  renderApps(d.apps);
+  renderTimeline(d.timeline);
+  renderReports(d.reports);
+}
+
+async function probeReachable(base, path){
+  try{
+    await fetch(base + path, {mode:'no-cors', cache:'no-store'});
+    return true;
+  } catch(e){
+    return false;
+  }
+}
+
+async function fetchJSON(path, base){
+  let res;
+  try{
+    res = await fetch(base + path);
+  } catch(networkErr){
+    const reachable = await probeReachable(base, path);
+    const err = new Error(reachable
+      ? `服务器有响应，但被浏览器跨域策略（CORS）拦截了内容`
+      : `无法连接到 ${base} — 服务未运行，或地址/端口不对`);
+    err.kind = reachable ? 'cors' : 'unreachable';
+    err.endpoint = path;
+    throw err;
+  }
+  if(!res.ok){
+    const err = new Error(`返回了 HTTP ${res.status}，路由或参数可能不匹配`);
+    err.kind = 'http'; err.endpoint = path;
+    throw err;
+  }
+  let body;
+  try{
+    body = await res.json();
+  } catch(parseErr){
+    const err = new Error(`响应内容不是合法 JSON`);
+    err.kind = 'parse'; err.endpoint = path;
+    throw err;
+  }
+  if(body && typeof body === 'object' && 'code' in body && body.code !== 0){
+    const err = new Error(`接口返回错误：${body.message || ('code ' + body.code)}`);
+    err.kind = 'app'; err.endpoint = path;
+    throw err;
+  }
+  return (body && typeof body === 'object' && 'data' in body) ? body.data : body;
+}
+
+function renderBanner(errors){
+  const banner = document.getElementById('banner');
+  const title = document.getElementById('bannerTitle');
+  const detail = document.getElementById('bannerDetail');
+
+  if(!errors.length){
+    banner.classList.remove('show');
+    return;
+  }
+  banner.classList.add('show');
+
+  const kinds = new Set(errors.map(e => e.kind));
+  if(kinds.has('cors') && kinds.size === 1){
+    title.textContent = '⚠ 服务正在运行，但浏览器 CORS 策略拦截了响应 — 以下模块未显示数据';
+  } else if(kinds.has('unreachable') && kinds.size === 1){
+    title.textContent = '⚠ 无法连接到本地服务 — 以下模块未显示数据';
+  } else if(kinds.has('shape') && kinds.size === 1){
+    title.textContent = '⚠ 接口已响应，但数据格式与预期不符 — 以下模块未显示数据';
+  } else {
+    title.textContent = '⚠ 部分接口请求失败 — 对应模块未显示数据';
+  }
+
+  detail.innerHTML = errors.map(e =>
+    `<div>· <code style="color:var(--text);">${e.endpoint}</code> — ${e.message}</div>`
+  ).join('');
+}
+
+async function loadRange(start, end){
+  const base = getApiBase();
+  const q = `?startDate=${start}&endDate=${end}`;
+  const errors = [];
+
+  const guarded = (path) => fetchJSON(path, base).catch(err => { errors.push(err); return undefined; });
+
+  const [summaryRes, heatRes, appRes, timelineRes, reportRes] = await Promise.all([
+    guarded('/api/daily-summary' + q),
+    guarded('/api/heat-map' + q),
+    guarded('/api/app-usage' + q),
+    guarded('/api/timeline' + q),
+    guarded('/api/report' + q),
+  ]);
+
+  const out = { summary:null, categories:null, heat:null, heatDate:start, apps:null, timeline:null, reports:null };
+
+  // ---- daily-summary: {activeEnd, activePeriod, activeStart, categoryBreakdown:{cat:minutes}, focusMinutes, recordCount}
+  // data:null is a legitimate response meaning "no records in this range" — not an error.
+  if(summaryRes === null){
+    out.summary = { count:0, focusHours:0, activePeriod:'--' };
+    out.categories = [];
+  } else if(summaryRes && typeof summaryRes === 'object' && summaryRes.recordCount !== undefined){
+    out.summary = {
+      count: summaryRes.recordCount,
+      focusHours: Math.round((summaryRes.focusMinutes||0)/6)/10,
+      activePeriod: summaryRes.activePeriod || '--',
+    };
+    const breakdown = summaryRes.categoryBreakdown || {};
+    out.categories = Object.entries(breakdown)
+      .map(([name, minutes]) => [name, Math.round((minutes/60)*100)/100])
+      .sort((a,b)=> b[1]-a[1]);
+  } else if(summaryRes !== undefined){
+    // Response came back but didn't match the expected shape or the null-empty case — a real failure.
+    errors.push({endpoint:'/api/daily-summary', message:'响应格式与预期不符', kind:'shape'});
+  }
+
+  // ---- heat-map: array of per-day objects with hourlyCounts:[24]. null = no data for range.
+  if(heatRes === null){
+    out.heat = new Array(24).fill(0);
+    out.heatDate = start;
+  } else if(Array.isArray(heatRes)){
+    if(heatRes.length){
+      const day = heatRes.find(d => d.date === start) || heatRes[0];
+      if(Array.isArray(day.hourlyCounts) && day.hourlyCounts.length === 24){
+        out.heat = day.hourlyCounts;
+        out.heatDate = day.date;
+      } else {
+        errors.push({endpoint:'/api/heat-map', message:'响应格式与预期不符', kind:'shape'});
+      }
+    } else {
+      out.heat = new Array(24).fill(0);
+      out.heatDate = start;
+    }
+  }
+
+  // ---- app-usage: real fields confirmed from db.py: appName, totalDurationSec, firstUsedAt, lastUsedAt. null = no data.
+  if(appRes === null){
+    out.apps = [];
+  } else if(Array.isArray(appRes)){
+    out.apps = appRes.map(a => ({
+      name: a.appName ?? a.name ?? a.app ?? '未知应用',
+      minutes: (a.totalDurationSec ?? 0) / 60,
+    }));
+  }
+
+  // ---- timeline: array of {category, started_at, ended_at, summary, details_json (string), ...}. null = no data.
+  if(timelineRes === null){
+    out.timeline = [];
+  } else if(Array.isArray(timelineRes)){
+    out.timeline = timelineRes.map(it => {
+      const details = parseDetails(it.details_json);
+      return {
+        time: fmtTime(it.started_at),
+        category: it.category || '其他',
+        app: appLabel(details),
+        desc: (it.summary || '').trim(),
+      };
+    });
+  }
+
+  // ---- report: shape unconfirmed. Accepts common field names, otherwise null (not guessed). null = no reports.
+  if(reportRes === null){
+    out.reports = [];
+  } else if(Array.isArray(reportRes)){
+    out.reports = reportRes.map(r => ({
+      date: r.date || r.title || '',
+      url: r.url || r.path || '#',
+    }));
+  }
+
+  renderBanner(errors);
+  renderAll(out);
+}
+
+function currentRange(){
+  const s = document.getElementById('startDate').value || todayStr();
+  const e = document.getElementById('endDate').value || todayStr();
+  return [s, e];
+}
+
+let autoRefreshTimer = null;
+
+function updateLastUpdated(){
+  const el = document.getElementById('lastUpdated');
+  const now = new Date();
+  el.textContent = '最后更新 ' + now.toLocaleTimeString('zh-CN', {hour:'2-digit', minute:'2-digit', second:'2-digit', hour12:false});
+}
+
+async function loadAndStamp(){
+  await loadRange(...currentRange());
+  updateLastUpdated();
+}
+
+function stopAutoRefresh(){
+  if(autoRefreshTimer){ clearInterval(autoRefreshTimer); autoRefreshTimer = null; }
+}
+
+function startAutoRefresh(){
+  stopAutoRefresh();
+  const seconds = parseInt(document.getElementById('autoRefreshInterval').value, 10) || 30;
+  autoRefreshTimer = setInterval(loadAndStamp, seconds * 1000);
+}
+
+document.getElementById('autoRefreshToggle').addEventListener('change', (e)=>{
+  if(e.target.checked) startAutoRefresh(); else stopAutoRefresh();
+});
+document.getElementById('autoRefreshInterval').addEventListener('change', ()=>{
+  if(document.getElementById('autoRefreshToggle').checked) startAutoRefresh();
+});
+// Pause polling while the tab is hidden, resume (and refresh immediately) when it's visible again,
+// so it doesn't keep hammering the backend from a background tab.
+document.addEventListener('visibilitychange', ()=>{
+  if(!document.getElementById('autoRefreshToggle').checked) return;
+  if(document.hidden){ stopAutoRefresh(); }
+  else { loadAndStamp(); startAutoRefresh(); }
+});
+
+document.getElementById('loadBtn').addEventListener('click', loadAndStamp);
+document.getElementById('retryBtn').addEventListener('click', loadAndStamp);
+document.getElementById('tlOldestFirst').addEventListener('click', (e)=>{
+  tlOldestFirst = !tlOldestFirst;
+  e.target.textContent = tlOldestFirst ? '按时间倒序 ↓' : '按时间正序 ↑';
+  renderTimeline(currentTimeline);
+});
+
+document.getElementById('startDate').value = todayStr();
+document.getElementById('endDate').value = todayStr();
+loadAndStamp();
+if(document.getElementById('autoRefreshToggle').checked) startAutoRefresh();
+</script>
+</body>
+</html>

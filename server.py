@@ -8,11 +8,13 @@ from flask import Flask, request, jsonify
 import db
 import ai_client
 import config
+from flask_cors import CORS
 
 log = logging.getLogger("server")
 
 app = Flask(__name__)
 
+CORS(app)
 
 def ok(data=None):
     return jsonify({"code": 0, "message": "success", "data": data})

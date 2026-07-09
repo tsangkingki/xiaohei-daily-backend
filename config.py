@@ -12,10 +12,9 @@ DB_PATH = DATA_DIR / "xiaohei.db"
 SCREENSHOT_DIR = DATA_DIR / "screenshots"
 SCREENSHOT_DIR.mkdir(exist_ok=True)
 
-# AI Config (Xiaomi Mimo)
-AI_BASE_URL = "https://token-plan-cn.xiaomimimo.com/v1"
-AI_API_KEY = "tp-czq97wj2vol05hpfipuico337yuvk7tbo8ikslu5yh8vjnlb"
-AI_MODEL = "mimo-v2.5"
+AI_BASE_URL = "http://localhost:11434/v1"
+AI_API_KEY = "ollama"
+AI_MODEL = "qwen3-vl:8b"
 
 # Screenshot interval in seconds (configurable: 30, 60, 300)
 SCREENSHOT_INTERVAL_SEC = int(os.environ.get("SCREENSHOT_INTERVAL_SEC", "60"))

@@ -145,6 +145,7 @@ def create_app_usage(app_name, started_at, ended_at, duration_sec):
 
 
 def query_app_usage(start_date=None, end_date=None):
+    start_date, end_date = _normalize_date_range(start_date, end_date)  # ← add this line
     with get_conn() as conn:
         if start_date and end_date:
             rows = conn.execute(
