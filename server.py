@@ -2,8 +2,10 @@
 
 import json
 import logging
+import sys
 from datetime import datetime
-from flask import Flask, request, jsonify
+from pathlib import Path
+from flask import Flask, request, jsonify, send_file
 
 import db
 import ai_client
@@ -22,6 +24,15 @@ def ok(data=None):
 
 def err(code, message):
     return jsonify({"code": code, "message": message, "data": None})
+
+
+def _dashboard_html_path() -> Path:
+    """Locate the bundled dashboard HTML for both source and PyInstaller builds."""
+    if getattr(sys, "frozen", False):
+        base = Path(sys._MEIPASS)
+    else:
+        base = Path(__file__).parent
+    return base / "frontend" / "xiaohei-dashboard.html"
 
 
 # ── API Documentation ──
@@ -59,27 +70,39 @@ def index():
 ### 1. 获取 API 文档
 - `GET /`
 
-### 2. 查询工作时间线
+### 2. 打开 Web 看板
+- `GET /dashboard`
+
+### 3. 查询工作时间线
 - `GET /api/timeline?startDate=YYYY-MM-DD&endDate=YYYY-MM-DD`
 - 返回全量记录，不做分页。
 
-### 3. 查询工作报告
+### 4. 查询工作报告
 - `GET /api/report?startDate=YYYY-MM-DD&endDate=YYYY-MM-DD`
 
-### 4. 查询时段热力图
+### 5. 查询时段热力图
 - `GET /api/heat-map?startDate=YYYY-MM-DD&endDate=YYYY-MM-DD`
 - 默认近 7 天
 
-### 5. 查询应用使用时长
+### 6. 查询应用使用时长
 - `GET /api/app-usage?startDate=YYYY-MM-DD&endDate=YYYY-MM-DD`
 
-### 6. 健康检查
+### 7. 健康检查
 - `GET /api/health`
 
-### 7. 手动触发截图分析
+### 8. 手动触发截图分析
 - `POST /api/capture` — 立即截图并分析
 """.format(host=config.HTTP_HOST, port=config.HTTP_PORT)
     return doc, 200, {"Content-Type": "text/markdown; charset=utf-8"}
+
+
+@app.route("/dashboard", methods=["GET"])
+def dashboard():
+    """Serve the web dashboard bundled with the application."""
+    path = _dashboard_html_path()
+    if path.exists():
+        return send_file(path, mimetype="text/html; charset=utf-8")
+    return err(404, "Dashboard HTML not found")
 
 
 # ── Work Timeline ──

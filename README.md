@@ -37,6 +37,7 @@ SCREENSHOT_INTERVAL_SEC=300 python3 main.py   # 5分钟
 | 接口 | 说明 |
 |------|------|
 | `GET /` | API 文档（Markdown） |
+| `GET /dashboard` | Web 看板（打包后也可用） |
 | `GET /api/health` | 健康检查 |
 | `GET /api/timeline?startDate=&endDate=` | 工作时间线 |
 | `GET /api/daily-summary?startDate=&endDate=` | 聚合统计（条数、专注时长、活跃时段、分类分布） |
@@ -94,23 +95,93 @@ AI_MODEL = "mimo-v2.5"
 | `SKIP_PERMISSION_CHECK` | - | 设置后跳过权限自检 |
 | `EXIT_ON_PERMISSION_FAIL` | - | 权限未生效时直接退出 |
 
+## Windows 一键打包 + 启动
+
+项目内置 PyInstaller 构建脚本和 Windows 一键启动器。
+
+### 1. 构建可执行文件
+
+```bash
+# 双击即可（会自动创建 .venv 并安装依赖）
+build.bat
+
+# 或者手动执行
+python build.py              # 推荐：文件夹模式，启动更快
+python build.py --onefile    # 单文件模式，更便携
+```
+
+构建完成后，可执行文件位于：
+
+```
+dist\xiaohei-daily\xiaohei-daily.exe
+```
+
+打包后的数据（SQLite、截图、报告）会持久化到 Windows 的用户目录，
+不会因临时文件被清理而丢失：
+
+```
+%LOCALAPPDATA%\XiaoheiDaily\
+```
+
+### 2. 一键启动 / 停止
+
+构建完成后，任选一种方式启动：
+
+| 方式 | 文件 | 说明 |
+|------|------|------|
+| 无窗口后台启动 | 双击 `start.vbs` | 推荐，无黑框 |
+| 带窗口启动 | 双击 `start.bat` | 可看到日志 |
+| 停止服务 | 双击 `stop.bat` / `stop.vbs` | 结束进程 |
+| 桌面快捷方式 | 运行 `create-shortcut.ps1` | 在桌面生成图标 |
+
+也可以直接双击 `dist\xiaohei-daily\xiaohei-daily.exe` 运行。
+
+服务启动后，在浏览器打开看板：
+
+```
+http://127.0.0.1:8089/dashboard
+```
+
+或打开 API 文档：
+
+```
+http://127.0.0.1:8089
+```
+
+### 3. 启动器脚本说明
+
+| 脚本 | 用途 |
+|------|------|
+| `build.py` / `build.bat` | 构建 `.exe` |
+| `start.vbs` | 无窗口一键启动（优先 exe，其次源码） |
+| `start.bat` | 有窗口一键启动 |
+| `stop.bat` / `stop.vbs` | 一键停止 |
+| `create-shortcut.ps1` | 在桌面创建快捷方式 |
+
 ## 项目结构
 
 ```
 ├── main.py              # 入口：调度器 + HTTP 服务
-├── config.py            # 配置
+├── config.py            # 配置（打包后数据持久化到用户目录）
 ├── db.py                # SQLite 数据库操作
-├── screenshot.py        # macOS 截图
+├── screenshot.py        # 跨平台截图（macOS screencapture / mss）
 ├── ai_client.py         # AI Vision API 调用
 ├── classifier.py        # 12 类工作分类规则
 ├── collector.py         # 核心循环：截图→AI→分类→存储
-├── app_tracker.py       # 前台应用追踪（osascript）
+├── app_tracker.py       # 前台应用追踪（macOS / Windows）
 ├── prompt.py            # 截图分析 prompt
 ├── permission_check.py  # 启动权限自检
 ├── report.py            # Markdown 日报生成
 ├── server.py            # Flask HTTP API
+├── build.py             # PyInstaller 构建脚本
+├── build.bat            # 双击构建 exe
+├── start.vbs            # 一键无窗口启动
+├── start.bat            # 一键窗口启动
+├── stop.bat             # 一键停止
+├── stop.vbs             # 一键停止（无窗口）
+├── create-shortcut.ps1  # 创建桌面快捷方式
 ├── requirements.txt
-└── data/                # 运行时数据（不入 git）
+└── data/                # 源码运行时数据（不入 git）
     ├── xiaohei.db
     ├── screenshots/
     └── reports/

@@ -1,16 +1,37 @@
 """Configuration management."""
 
 import os
+import sys
 import json
 from pathlib import Path
 
+
+def _get_data_dir() -> Path:
+    """Return the data directory.
+
+    - When running from source: data/ next to the project.
+    - When running as a PyInstaller bundle: a persistent user directory
+      so screenshots and the SQLite DB survive app restarts.
+    """
+    if getattr(sys, "frozen", False):
+        # PyInstaller bundle
+        if sys.platform == "win32":
+            base = Path(os.environ.get("LOCALAPPDATA", Path.home() / "AppData" / "Local"))
+        elif sys.platform == "darwin":
+            base = Path.home() / "Library" / "Application Support"
+        else:
+            base = Path.home() / ".local" / "share"
+        return base / "XiaoheiDaily"
+    return Path(__file__).parent / "data"
+
+
 # Paths
 BASE_DIR = Path(__file__).parent
-DATA_DIR = BASE_DIR / "data"
-DATA_DIR.mkdir(exist_ok=True)
+DATA_DIR = _get_data_dir()
+DATA_DIR.mkdir(parents=True, exist_ok=True)
 DB_PATH = DATA_DIR / "xiaohei.db"
 SCREENSHOT_DIR = DATA_DIR / "screenshots"
-SCREENSHOT_DIR.mkdir(exist_ok=True)
+SCREENSHOT_DIR.mkdir(parents=True, exist_ok=True)
 
 AI_BASE_URL = "http://localhost:11434/v1"
 AI_API_KEY = "ollama"

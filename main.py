@@ -154,7 +154,10 @@ def main():
         sys.exit(0)
 
     signal.signal(signal.SIGINT, shutdown)
-    signal.signal(signal.SIGTERM, shutdown)
+    try:
+        signal.signal(signal.SIGTERM, shutdown)
+    except (ValueError, OSError):
+        pass  # SIGTERM not supported on Windows without console
 
     log.info("Running. Press Ctrl+C to stop.")
     try:

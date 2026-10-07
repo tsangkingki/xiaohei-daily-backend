@@ -12,13 +12,32 @@ def _now_iso():
     return datetime.now(timezone.utc).isoformat()
 
 
+def _as_local(s):
+    """Parse a stored timestamp and return it in the machine's local timezone."""
+    dt = _parse_ts(s)
+    if dt is None:
+        return None
+    if dt.tzinfo is None:
+        return dt.astimezone()
+    return dt.astimezone()
+
+
+def _local_day_bounds(day_str):
+    """UTC ISO bounds [start, end) for a local calendar day (YYYY-MM-DD)."""
+    from datetime import timedelta
+    local_start = datetime.fromisoformat(day_str).replace(
+        hour=0, minute=0, second=0, microsecond=0
+    ).astimezone()
+    local_end = local_start + timedelta(days=1)
+    return (
+        local_start.astimezone(timezone.utc).isoformat(),
+        local_end.astimezone(timezone.utc).isoformat(),
+    )
+
+
 def _today_range():
-    """Return (start, end) ISO strings for today in local time."""
-    from datetime import datetime, timedelta
-    now = datetime.now()
-    start = now.replace(hour=0, minute=0, second=0, microsecond=0)
-    end = start + timedelta(days=1) - timedelta(microseconds=1)
-    return start.isoformat(), end.isoformat()
+    """Return UTC ISO [start, end) covering today in local time."""
+    return _local_day_bounds(datetime.now().astimezone().strftime("%Y-%m-%d"))
 
 
 def init_db():
@@ -100,11 +119,15 @@ def create_work_record(category, summary, started_at=None, ended_at=None,
 
 
 def _normalize_date_range(start_date, end_date):
-    """Normalize date strings to full ISO range for proper comparison."""
-    if start_date and len(start_date) == 10:  # YYYY-MM-DD
-        start_date = start_date + "T00:00:00"
-    if end_date and len(end_date) == 10:  # YYYY-MM-DD
-        end_date = end_date + "T23:59:59"
+    """Turn YYYY-MM-DD bounds into UTC ISO [start, end) in local time.
+
+    Stored timestamps are UTC (e.g. 12:00Z == 20:00 CST). Comparing them to
+    a naive local wall-clock string puts activity in the wrong hour and day.
+    """
+    if start_date and len(start_date) == 10:
+        start_date, _ = _local_day_bounds(start_date)
+    if end_date and len(end_date) == 10:
+        _, end_date = _local_day_bounds(end_date)
     return start_date, end_date
 
 
@@ -113,7 +136,7 @@ def query_work_records(start_date=None, end_date=None):
     with get_conn() as conn:
         if start_date and end_date:
             rows = conn.execute(
-                "SELECT * FROM work_records WHERE started_at >= ? AND started_at <= ? ORDER BY started_at",
+                "SELECT * FROM work_records WHERE started_at >= ? AND started_at < ? ORDER BY started_at",
                 (start_date, end_date)
             ).fetchall()
         elif start_date:
@@ -124,7 +147,7 @@ def query_work_records(start_date=None, end_date=None):
         else:
             start, end = _today_range()
             rows = conn.execute(
-                "SELECT * FROM work_records WHERE started_at >= ? AND started_at <= ? ORDER BY started_at",
+                "SELECT * FROM work_records WHERE started_at >= ? AND started_at < ? ORDER BY started_at",
                 (start, end)
             ).fetchall()
     return [dict(r) for r in rows]
@@ -151,7 +174,7 @@ def query_app_usage(start_date=None, end_date=None):
             rows = conn.execute(
                 "SELECT app_name as appName, SUM(duration_sec) as totalDurationSec, "
                 "MIN(started_at) as firstUsedAt, MAX(ended_at) as lastUsedAt "
-                "FROM app_usage_sessions WHERE started_at >= ? AND started_at <= ? "
+                "FROM app_usage_sessions WHERE started_at >= ? AND started_at < ? "
                 "GROUP BY app_name ORDER BY totalDurationSec DESC",
                 (start_date, end_date)
             ).fetchall()
@@ -160,7 +183,7 @@ def query_app_usage(start_date=None, end_date=None):
             rows = conn.execute(
                 "SELECT app_name as appName, SUM(duration_sec) as totalDurationSec, "
                 "MIN(started_at) as firstUsedAt, MAX(ended_at) as lastUsedAt "
-                "FROM app_usage_sessions WHERE started_at >= ? AND started_at <= ? "
+                "FROM app_usage_sessions WHERE started_at >= ? AND started_at < ? "
                 "GROUP BY app_name ORDER BY totalDurationSec DESC",
                 (start, end)
             ).fetchall()
@@ -243,15 +266,15 @@ def query_heat_map(start_date=None, end_date=None):
     records = query_work_records(start_date, end_date)
     day_map = {}
     for r in records:
-        day = r["started_at"][:10]
+        local = _as_local(r["started_at"])
+        if local is None:
+            continue
+        day = local.strftime("%Y-%m-%d")
+        hour = local.hour
         if day not in day_map:
             day_map[day] = {"date": day, "hourlyCounts": [0]*24, "focusMinutes": 0,
                             "totalRecords": 0, "categories": {}}
         entry = day_map[day]
-        try:
-            hour = int(r["started_at"][11:13])
-        except (ValueError, IndexError):
-            hour = 0
         entry["hourlyCounts"][hour] += 1
         entry["totalRecords"] += 1
         cat = r.get("category", "其他")
